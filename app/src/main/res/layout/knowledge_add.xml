@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="知识点"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/knowledgeAddET"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:gravity="top"
+            android:hint="请输入知识点"
+            android:inputType="textPersonName"
+            android:maxLines="10"
+            android:minLines="8"
+            android:scrollbars="vertical" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="页码"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/pageAddEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:gravity="top"
+            android:hint="请输入知识点页码"
+            android:inputType="textPersonName"
+            android:maxLines="10"
+            android:minLines="8"
+            android:scrollbars="vertical" />
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="题目"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/subjectAddEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:gravity="top"
+            android:hint="请输入知识点相关题目"
+            android:inputType="textPersonName"
+            android:maxLines="10"
+            android:minLines="8"
+            android:scrollbars="vertical" />
+
+        <Button
+            android:id="@+id/knowledgeKeepButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="保存" />
+    </LinearLayout>
+
+</ScrollView>
