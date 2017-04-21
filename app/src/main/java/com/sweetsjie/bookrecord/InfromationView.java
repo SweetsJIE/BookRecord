@@ -22,6 +22,7 @@ public class InfromationView extends Activity{
     private TextView subjectTV;
     private Intent intent;
     private MyDataBaseHelper myDataBaseHelper;
+    private String name;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -33,6 +34,9 @@ public class InfromationView extends Activity{
         pageTV = (TextView) findViewById(R.id.pageTV);
         subjectTV = (TextView) findViewById(R.id.subjectTV);
 
+        intent = getIntent();
+        name = intent.getStringExtra("name");
+        refreshData(name);
 
 
 
@@ -42,21 +46,35 @@ public class InfromationView extends Activity{
             @Override
             public void onClick(View v) {
                 intent = new Intent(InfromationView.this, KnowledgeAdd.class);
-                intent.putExtra("name",knowledgeTV.getText().toString());
+                Bundle bundle =new Bundle();
+                bundle.putString("name",knowledgeTV.getText().toString());
+                intent.putExtra("name",bundle);
                 startActivityForResult(intent, 0);
             }
         });
     }
 
+
+    //接收KnowledgeAdd回传值
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (resultCode){
+            case 0:
+                Bundle b=data.getBundleExtra("name");  //data为B中回传的Intent
+                String str=b.getString("name");//str即为回传的值
+                refreshData(str);
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
     @Override
     protected void onResume() {
-        refreshData();
+        refreshData(name);
         super.onResume();
     }
 
-    private void refreshData() {
-        intent = getIntent();
-        String name = intent.getStringExtra("name");
+    private void refreshData(String name) {
         //数据库类初始化
         myDataBaseHelper = new MyDataBaseHelper(InfromationView.this, "knowledgepoint.db", null, 1);
         myDataBaseHelper.getWritableDatabase();
