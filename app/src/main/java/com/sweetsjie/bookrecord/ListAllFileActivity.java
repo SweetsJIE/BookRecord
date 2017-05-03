@@ -4,10 +4,10 @@ import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -38,12 +38,11 @@ public class ListAllFileActivity extends ListActivity {
     private List<File> fileList;
     private List<String> listBuf = new ArrayList<String>();
     private List<String> listSelecting = new ArrayList<String>();
-    private List<String> listSelected = new ArrayList<String>();
     private Intent intentGet;
     private Bundle bundle;
-    private String fileNameKey = "fileName";
     private String nameString;
-    private MyDataBaseHelper mydatabaseHelper;
+    private MyDataBaseHelper myDataBaseHelper;
+
     private ProgressDialog progressDialog;
 
 
@@ -51,19 +50,23 @@ public class ListAllFileActivity extends ListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        //获取上一活动传过来的数据
         intentGet = getIntent();
         bundle =  intentGet.getBundleExtra("information");
 
+        //初始化progressDialog控件
         progressDialog = new ProgressDialog(ListAllFileActivity.this);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialog.setMessage("正在识别·········");
 
+        //获取文件path
         File path = android.os.Environment.getExternalStorageDirectory();
         File[] f = path.listFiles();
 
         fill(f);
     }
 
+    //获取file名字添加到listview
     private void fill(File[] files) {
         fileList = new ArrayList<File>();
 
@@ -79,6 +82,7 @@ public class ListAllFileActivity extends ListActivity {
         setListAdapter(fileNameList);
     }
 
+    //判断是否为txt后缀文件
     private boolean isValidFileOrDir(File fileIn) {
         if (fileIn.isDirectory()) {
             return true;
@@ -91,11 +95,11 @@ public class ListAllFileActivity extends ListActivity {
         return false;
     }
 
+    //获取文件名字Array
     private String[] fileToStrArr(List<File> fl) {
         ArrayList<String> fnList = new ArrayList<String>();
         for (int i = 0; i < fl.size(); i++) {
             nameString = fl.get(i).getName();
-            //Log.d("TAG",nameString);
             fnList.add(nameString);
         }
         return fnList.toArray(new String[0]);
@@ -103,34 +107,46 @@ public class ListAllFileActivity extends ListActivity {
 
 
 
+    //lsitview按键监听事件
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
 
-
+        //获取文件path
         File file = fileList.get(position);
         if (file.isDirectory()) {
             File[] f = file.listFiles();
             fill(f);
         } else {
+            //进度圆显示
             progressDialog.show();
 
+            //获取文件实例
             final File file1 = new File(file.getAbsolutePath());
 
+            //获取线程
             new Thread(new Runnable(){
                 public void run() {
-                    mydatabaseHelper = new MyDataBaseHelper(ListAllFileActivity.this, "knowledgepoint.db", null, 1);
-                    SQLiteDatabase db = mydatabaseHelper.getWritableDatabase();
-                    ContentValues values = new ContentValues();
+                    //数据库类初始化
+                    myDataBaseHelper = new MyDataBaseHelper(ListAllFileActivity.this, "knowledge.db", null, 1);
+                    SQLiteDatabase db = myDataBaseHelper.getWritableDatabase();
+
+                    ContentValues values0 = new ContentValues();
+                    ContentValues values1 = new ContentValues();
+                    ContentValues values2 = new ContentValues();
+
+                    //获取上一活动传递过来的数据
                     String purpose = bundle.getString("purpose");
                     String knowledgeName = bundle.getString("knowledgeName");
 
                     if (purpose.equals("knowledge")){
                         try {
+                            //分词子函数操作   传输file实例和前x个高频词
                             countLetter(file1, 8);
                             intentGet.setClass(ListAllFileActivity.this, MainActivity.class);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
+                        //异步数据操作
                         Message message = new Message();
                         message.what = 0;
                         handler.sendMessage(message);
@@ -138,10 +154,26 @@ public class ListAllFileActivity extends ListActivity {
                         startActivity(intentGet);
                     }
                     else {
-                        values.put("subject",getStringFromFile(file1.getAbsolutePath(), "GB2312"));
-                        db.update("knowledgepoint",values,"knowledge=?", new String[]{knowledgeName});
+                        //获取导入题库txt内容
+                        values2.put("subject",getStringFromFile(file1.getAbsolutePath(), "GB2312"));
 
+                        String ID = null;
+                        //获取相应的id值
+                        Cursor cursor = db.query("knowledge", null, null, null, null, null, null);
+                        if (cursor.moveToFirst()) {
+                            do {
+                                String buf = cursor.getString((cursor.getColumnIndex("knowledge")));
+                                if (buf.equals(knowledgeName)){
+                                    ID = cursor.getString((cursor.getColumnIndex("id")));
+                                }
+                            } while (cursor.moveToNext());
+                        }
+                        cursor.close();
+
+                        //把获取的题库更新数据库表subject
+                        db.update("subject",values2,"id=?", new String[]{ID});
                         intentGet.setClass(ListAllFileActivity.this, KnowledgeAdd.class);
+                        //设置回传数据
                         setResult(1, intentGet);
                         finish();
                     }
@@ -166,11 +198,18 @@ public class ListAllFileActivity extends ListActivity {
 
     };
 
+    //分词子函数
     public void countLetter(File file, int frequency) throws Exception {
 
-        mydatabaseHelper = new MyDataBaseHelper(this, "knowledgepoint.db", null, 1);
-        SQLiteDatabase db = mydatabaseHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
+        //数据库类初始化
+        myDataBaseHelper = new MyDataBaseHelper(ListAllFileActivity.this, "knowledge.db", null, 1);
+        final SQLiteDatabase db = myDataBaseHelper.getWritableDatabase();
+
+        ContentValues values0 =new ContentValues();
+        ContentValues values1 =new ContentValues();
+        ContentValues values2 =new ContentValues();
+
+
 
         StringReader sr = new StringReader(getStringFromFile(file.getAbsolutePath(), "GB2312"));
         IKSegmentation ik = new IKSegmentation(sr, true);
@@ -185,11 +224,19 @@ public class ListAllFileActivity extends ListActivity {
 
         for (String string : listBuf) {
             if (string.length() == 2 || string.length() == 3) {
+                //两字和三字存进list
                 listSelecting.add(string);
             } else if (string.length() > 3) {
-                values.put("knowledge", string);
-                db.insert("knowledgepoint", null, values);
-                //listSelected.add(string);
+                //把四字词直接添加数据库
+                values0.put("knowledge", string);
+                values1.put("page","null");
+                values2.put("subject","null");
+                db.insert("knowledge", null, values0);
+                db.insert("page",null,values1);
+                db.insert("subject",null,values2);
+                values0.clear();
+                values1.clear();
+                values2.clear();
             }
         }
 
@@ -237,10 +284,15 @@ public class ListAllFileActivity extends ListActivity {
             if (count++ < frequency) {
                 WordBean bean = (WordBean) ite.next();
 
-                values.put("knowledge", bean.getKey());
-                db.insert("knowledgepoint", null, values);
+                //把高频两字和三字词存入数据库
+                values0.put("knowledge", bean.getKey());
+                values1.put("page", "null");
+                values2.put("subject", "null");
 
-                Log.d("data", bean.getKey() + ":" + bean.getCount());
+                db.insert("knowledge", null, values0);
+                db.insert("page", null, values1);
+                db.insert("subject", null, values2);
+
             } else {
                 break;
             }
