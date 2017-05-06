@@ -8,11 +8,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.idescout.sql.SqlScoutServer;
 
@@ -139,6 +143,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        SubMenu subFile = menu.addSubMenu(0, Menu.FIRST, 0, "删除所有知识点");
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //数据库类初始化
+        myDataBaseHelper = new MyDataBaseHelper(MainActivity.this, "knowledge.db", null, 1);
+        final SQLiteDatabase db = myDataBaseHelper.getWritableDatabase();
+        switch(item.getItemId()) {
+            case Menu.FIRST:
+                // 设置Activity的Title
+                db.execSQL("DELETE FROM knowledge;");
+                db.execSQL("DELETE FROM page;");
+                db.execSQL("DELETE FROM subject;");
+                db.execSQL("DELETE FROM sqlite_sequence;");
+                //刷新listview
+                list.clear();
+                adapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this,"知识点删除成功",Toast.LENGTH_SHORT).show();
+                break;
+        }
+        return true;
+    }
 
     //刷新listview数据
     private void refreshData() {

@@ -52,7 +52,7 @@ public class ListAllFileActivity extends ListActivity {
 
         //获取上一活动传过来的数据
         intentGet = getIntent();
-        bundle =  intentGet.getBundleExtra("information");
+        bundle = intentGet.getBundleExtra("information");
 
         //初始化progressDialog控件
         progressDialog = new ProgressDialog(ListAllFileActivity.this);
@@ -106,7 +106,6 @@ public class ListAllFileActivity extends ListActivity {
     }
 
 
-
     //lsitview按键监听事件
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
@@ -124,7 +123,7 @@ public class ListAllFileActivity extends ListActivity {
             final File file1 = new File(file.getAbsolutePath());
 
             //获取线程
-            new Thread(new Runnable(){
+            new Thread(new Runnable() {
                 public void run() {
                     //数据库类初始化
                     myDataBaseHelper = new MyDataBaseHelper(ListAllFileActivity.this, "knowledge.db", null, 1);
@@ -138,10 +137,10 @@ public class ListAllFileActivity extends ListActivity {
                     String purpose = bundle.getString("purpose");
                     String knowledgeName = bundle.getString("knowledgeName");
 
-                    if (purpose.equals("knowledge")){
+                    if (purpose.equals("knowledge")) {
                         try {
                             //分词子函数操作   传输file实例和前x个高频词
-                            countLetter(file1, 8);
+                            countLetter(file1, 45);
                             intentGet.setClass(ListAllFileActivity.this, MainActivity.class);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -152,10 +151,9 @@ public class ListAllFileActivity extends ListActivity {
                         handler.sendMessage(message);
 
                         startActivity(intentGet);
-                    }
-                    else {
+                    } else {
                         //获取导入题库txt内容
-                        values2.put("subject",getStringFromFile(file1.getAbsolutePath(), "GB2312"));
+                        values2.put("subject", getStringFromFile(file1.getAbsolutePath(), "GB2312"));
 
                         String ID = null;
                         //获取相应的id值
@@ -163,7 +161,7 @@ public class ListAllFileActivity extends ListActivity {
                         if (cursor.moveToFirst()) {
                             do {
                                 String buf = cursor.getString((cursor.getColumnIndex("knowledge")));
-                                if (buf.equals(knowledgeName)){
+                                if (buf.equals(knowledgeName)) {
                                     ID = cursor.getString((cursor.getColumnIndex("id")));
                                 }
                             } while (cursor.moveToNext());
@@ -171,7 +169,7 @@ public class ListAllFileActivity extends ListActivity {
                         cursor.close();
 
                         //把获取的题库更新数据库表subject
-                        db.update("subject",values2,"id=?", new String[]{ID});
+                        db.update("subject", values2, "id=?", new String[]{ID});
                         intentGet.setClass(ListAllFileActivity.this, KnowledgeAdd.class);
                         //设置回传数据
                         setResult(1, intentGet);
@@ -189,7 +187,7 @@ public class ListAllFileActivity extends ListActivity {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case 0:
-                    if (progressDialog.isShowing())progressDialog.dismiss();
+                    if (progressDialog.isShowing()) progressDialog.dismiss();
                     break;
                 default:
                     break;
@@ -201,14 +199,18 @@ public class ListAllFileActivity extends ListActivity {
     //分词子函数
     public void countLetter(File file, int frequency) throws Exception {
 
+        String page = "";
+        String pageBuf = "";
+        int i = 0, j = 0;
+        String[] knowledgeBuf = new String[10000];
+
         //数据库类初始化
         myDataBaseHelper = new MyDataBaseHelper(ListAllFileActivity.this, "knowledge.db", null, 1);
         final SQLiteDatabase db = myDataBaseHelper.getWritableDatabase();
 
-        ContentValues values0 =new ContentValues();
-        ContentValues values1 =new ContentValues();
-        ContentValues values2 =new ContentValues();
-
+        ContentValues values0 = new ContentValues();
+        ContentValues values1 = new ContentValues();
+        ContentValues values2 = new ContentValues();
 
 
         StringReader sr = new StringReader(getStringFromFile(file.getAbsolutePath(), "GB2312"));
@@ -222,21 +224,36 @@ public class ListAllFileActivity extends ListActivity {
             e.printStackTrace();
         }
 
+        //Log.d("listBuf", String.valueOf(listBuf));
         for (String string : listBuf) {
-            if (string.length() == 2 || string.length() == 3) {
-                //两字和三字存进list
-                listSelecting.add(string);
-            } else if (string.length() > 3) {
+            //if (string.length() == 2 || string.length() == 3) {
+            if (string.length() > 1) {
+                {
+//                    if ((string.contains("第") && string.contains("章"))) {
+//                        if (i >= 1) page = null;
+//                        page = string;
+//                        pageBuf = string;
+//                        i++;
+//                    }
+//                    if ((string.contains("第") && string.contains("节"))) {
+//                        if (j >= 1) page = null;
+//                        page = pageBuf + string;
+//                        j++;
+//                    }
+                    //两字和三字存进list
+                    listSelecting.add(string);
+                } //else if (string.length() > 3) {
                 //把四字词直接添加数据库
+                /*
                 values0.put("knowledge", string);
-                values1.put("page","null");
+                values1.put("page",page);
                 values2.put("subject","null");
                 db.insert("knowledge", null, values0);
                 db.insert("page",null,values1);
                 db.insert("subject",null,values2);
                 values0.clear();
                 values1.clear();
-                values2.clear();
+                values2.clear();*/
             }
         }
 
@@ -280,21 +297,62 @@ public class ListAllFileActivity extends ListActivity {
         //输出set中的数据
         Iterator ite = set.iterator();
         int count = 0;
+        int k = 0;
         while (ite.hasNext()) {
             if (count++ < frequency) {
                 WordBean bean = (WordBean) ite.next();
+                knowledgeBuf[k] = bean.getKey();
+                k++;
 
-                //把高频两字和三字词存入数据库
-                values0.put("knowledge", bean.getKey());
-                values1.put("page", "null");
-                values2.put("subject", "null");
-
-                db.insert("knowledge", null, values0);
-                db.insert("page", null, values1);
-                db.insert("subject", null, values2);
 
             } else {
                 break;
+            }
+        }
+
+        k = 0;
+        i = 0;
+        j = 0;
+        values0.clear();
+        values1.clear();
+        values2.clear();
+        //把提取的高频知识点遍历查找对应章节
+        while (k<(frequency)) {
+            for (String str : listBuf) {
+                //Log.d("listbuf", str);
+                //if (str.length() > 1) {
+
+                if ((str.contains("第") && str.contains("章"))) {
+                    if (i >= 1) page = null;
+                    page = str;
+                    pageBuf = str;
+                    i++;
+                }
+                if ((str.contains("第") && str.contains("节"))) {
+                    if (j >= 1) page = null;
+                    page = pageBuf + str;
+                    j++;
+                }
+                //Log.d("str",str);
+                //Log.d("bean",knowledgeBuf[k]);
+                if (str.equals((knowledgeBuf[k]))) {
+
+                    //把高频两字和三字词存入数据库
+                    values0.put("knowledge", knowledgeBuf[k]);
+                    values1.put("page", page);
+                    values2.put("subject", "null");
+
+                    db.insert("knowledge", null, values0);
+                    db.insert("page", null, values1);
+                    db.insert("subject", null, values2);
+
+                    values0.clear();
+                    values1.clear();
+                    values2.clear();
+
+                    k++;
+                }
+
             }
         }
 
